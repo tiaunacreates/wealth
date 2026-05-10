@@ -1859,7 +1859,7 @@ function downloadResults() {
 
     const bar = (label, pct, isPrimary = false) => {
         checkY(12);
-        doc.setFontSize(8);
+        doc.setFontSize(15);
         doc.setFont('helvetica', isPrimary ? 'bold' : 'normal');
         doc.setTextColor(...(isPrimary ? accent : grey));
         doc.text(label, margin, y);
@@ -1880,14 +1880,14 @@ function downloadResults() {
     doc.rect(0, 0, pageW, 2, 'F');
 
     y = 48;
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(30);
+    doc.setFont('INTER', 'bold' , 'all caps');
     doc.setTextColor(...accent);
     doc.text('WEALTH CREATION DIAGNOSTIC', margin, y);
     y += 12;
 
     doc.setFontSize(28);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('INTER', 'bold', 'all caps');
     doc.setTextColor(...white);
     doc.text('What Can', margin, y);
     y += 12;
@@ -1895,8 +1895,8 @@ function downloadResults() {
     doc.text('You Build?', margin, y);
     y += 20;
 
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(15);
+    doc.setFont('inter', 'normal');
     doc.setTextColor(...grey);
     const verse = '"But remember the Lord your God, for it is he who gives you the ability to produce wealth." — Deuteronomy 8:18 (NIV)';
     const verseLines = doc.splitTextToSize(verse, contentW - 20);
@@ -1908,8 +1908,8 @@ function downloadResults() {
     doc.text(verseLines, margin + 4, y + 2);
     y += verseLines.length * 5 + 20;
 
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(15);
+    doc.setFont('inter', 'bold');
     doc.setTextColor(...white);
     doc.text(primary[0].toUpperCase(), margin, y);
     doc.setFontSize(9);
@@ -1918,7 +1918,7 @@ function downloadResults() {
     doc.text(getPct(primary[1]) + '% match', margin, y + 6);
     y += 20;
 
-    doc.setFontSize(8);
+    doc.setFontSize(15);
     doc.setTextColor(...grey);
     doc.text('AI Agency Essentials × TiaunaCreates', margin, pageH - 16);
     doc.text('aiagencyessentials@gmail.com', pageW - margin, pageH - 16, { align: 'right' });
@@ -1927,22 +1927,22 @@ function downloadResults() {
 
     // ── Page 2: Profiles ──
     addPage();
-    heading('Your Profile Results', 11);
+    heading('Your Profile Results', 25);
     y += 6;
 
     [[primary, pp, 'Primary Profile'], [secondary, sp, 'Secondary Strength'], [tertiary, tp, 'Also In You']].forEach(([profile, data, rank]) => {
         checkY(40);
-        doc.setFontSize(7);
-        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(15);
+        doc.setFont('inter', 'bold');
         doc.setTextColor(...accent);
         doc.text(rank.toUpperCase(), margin, y);
         y += 5;
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(15);
+        doc.setFont('inter', 'bold');
         doc.setTextColor(...white);
         doc.text(profile[0], margin, y);
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(15);
+        doc.setFont('inter', 'normal');
         doc.setTextColor(...accent);
         doc.text(getPct(profile[1]) + '%', pageW - margin, y, { align: 'right' });
         y += 7;
@@ -1954,7 +1954,7 @@ function downloadResults() {
 
     // ── Page 3: Score Breakdown ──
     addPage();
-    heading('Full Score Breakdown', 11);
+    heading('Full Score Breakdown', 20);
     y += 8;
     sorted.forEach(([name, score], i) => {
         const scaleBar = (s) => {
@@ -1966,12 +1966,12 @@ function downloadResults() {
     });
 
     y += 8;
-    heading('What You Could Build', 10);
+    heading('What You Could Build', 25);
     y += 4;
     pp.opportunities.forEach(opp => {
         checkY(8);
-        doc.setFontSize(8.5);
-        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(18);
+        doc.setFont('inter', 'normal');
         doc.setTextColor(...accent);
         doc.text('→', margin, y);
         doc.setTextColor(...white);
@@ -1982,7 +1982,7 @@ function downloadResults() {
 
     // ── Page 4+: 30-Day Plan ──
     addPage();
-    heading('Your 30-Day Plan', 11);
+    heading('Your 30-Day Plan', 15);
     y += 6;
 
     const planLines = planText.split('\n').filter(l => l.trim());
@@ -1992,8 +1992,8 @@ function downloadResults() {
         if (trimmed === trimmed.toUpperCase() && trimmed.length < 60) {
             checkY(14);
             y += 4;
-            doc.setFontSize(8);
-            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(15);
+            doc.setFont('inter', 'bold');
             doc.setTextColor(...accent);
             doc.text(trimmed, margin, y);
             y += 6;
@@ -2006,7 +2006,7 @@ function downloadResults() {
     checkY(20);
     y += 10;
     divider();
-    doc.setFontSize(7.5);
+    doc.setFontSize(15);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...grey);
     doc.text('AI Agency Essentials × TiaunaCreates', margin, y);
@@ -2019,22 +2019,72 @@ function downloadResults() {
 
 function sendResults() {
     const email = document.getElementById('emailInput').value;
-    if (!email.includes('@')) { alert('Please enter a valid email'); return; }
+    if (!email.includes('@')) { alert('Please enter a valid email address'); return; }
     const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+    const totalScore = Object.values(scores).reduce((a, b) => a + b, 0);
+    const getPct = (s) => totalScore > 0 ? Math.round((s / totalScore) * 100) : 0;
     const primary = sorted[0];
-    const subject = encodeURIComponent('Your Wealth-Creation Profile: ' + primary[0]);
-    const body = encodeURIComponent('Your profile: ' + primary[0] + '\n\nView full results: ' + window.location.href);
+    const secondary = sorted[1];
+    const tertiary = sorted[2];
+    const pp = profileData[primary[0]];
+    const planEl = document.getElementById('planContainer');
+    const planText = planEl ? planEl.innerText.trim() : '';
+    const subject = encodeURIComponent('My Wealth-Creation Profile: ' + primary[0]);
+    const body = encodeURIComponent(
+`WHAT CAN YOU BUILD? — WEALTH CREATION DIAGNOSTIC
+
+"But remember the Lord your God, for it is he who gives you the ability to produce wealth." — Deuteronomy 8:18 (NIV)
+
+PRIMARY: ${primary[0]} — ${getPct(primary[1])}%
+${pp.desc}
+
+SECONDARY: ${secondary[0]} — ${getPct(secondary[1])}%
+ALSO IN YOU: ${tertiary[0]} — ${getPct(tertiary[1])}%
+
+ALL SCORES:
+${sorted.map(([n, s]) => (n + ' ').padEnd(38, '.') + ' ' + getPct(s) + '%').join('\n')}
+
+YOUR 30-DAY PLAN:
+${planText}
+
+© 2026 AI Agency Essentials & TiaunaCreates
+aiagencyessentials@gmail.com
+Take the diagnostic: ${window.location.href}`);
     window.location.href = 'mailto:' + email + '?subject=' + subject + '&body=' + body;
+
 }
 
 function copyResults() {
     const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
     const totalScore = Object.values(scores).reduce((a, b) => a + b, 0);
     const getPct = (s) => totalScore > 0 ? Math.round((s / totalScore) * 100) : 0;
-    const primary = sorted[0][0];
-    const secondary = sorted[1][0];
-    const tertiary = sorted[2][0];
-    const text = `MY WEALTH-CREATION PROFILE\n━━━━━━━━━━━━━━━━━━━━━━━━━━\nPrimary:   ${primary} (${getPct(sorted[0][1])}%)\nSecondary: ${secondary} (${getPct(sorted[1][1])}%)\nAlso In Me: ${tertiary} (${getPct(sorted[2][1])}%)\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n"But remember the Lord your God, for it is he who gives you the ability to produce wealth." — Deuteronomy 8:18\n\nTake the diagnostic: ${window.location.href}`;
+    const primary = sorted[0];
+    const secondary = sorted[1];
+    const tertiary = sorted[2];
+    const pp = profileData[primary[0]];
+    const planEl = document.getElementById('planContainer');
+    const planText = planEl ? planEl.innerText.trim() : '';
+    const text =
+`WHAT CAN YOU BUILD? — WEALTH CREATION DIAGNOSTIC
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+"But remember the Lord your God, for it is he who gives you the ability to produce wealth." — Deuteronomy 8:18 (NIV)
+
+PRIMARY: ${primary[0]} — ${getPct(primary[1])}%
+${pp.desc}
+
+SECONDARY: ${secondary[0]} — ${getPct(secondary[1])}%
+ALSO IN YOU: ${tertiary[0]} — ${getPct(tertiary[1])}%
+
+ALL SCORES:
+${sorted.map(([n, s]) => (n + ' ').padEnd(38, '.') + ' ' + getPct(s) + '%').join('\n')}
+
+YOUR 30-DAY PLAN:
+${planText}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+© 2026 AI Agency Essentials & TiaunaCreates
+Take the diagnostic: ${window.location.href}`;
     navigator.clipboard.writeText(text).then(() => {
         const btn = document.getElementById('copyBtn');
         btn.textContent = '✓ Copied';
