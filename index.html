@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>What Can You Build? — Wealth Creation Diagnostic</title>
+   <title>What Can You Build? — Wealth Creation Diagnostic</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;800&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1804,73 +1804,83 @@ function downloadResults() {
 
     const { jsPDF } = window.jspdf;
 
-    // Hide elements that should not appear in the PDF
-    const hideEls = document.querySelectorAll('.email-section, .share-section, [onclick="downloadResults()"], [onclick="copyResults()"], [onclick="retakeTest()"], #copyBtn, .prompt-pack, .site-footer-wrap');
-    hideEls.forEach(el => el.style.visibility = 'hidden');
-
     const resultsEl = document.getElementById('resultsSection');
+    const clone = resultsEl.cloneNode(true);
 
-    html2canvas(resultsEl, {
-        backgroundColor: '#080808',
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        windowWidth: 860,
-        scrollY: -window.scrollY,
-        ignoreElements: (el) => {
-            return el.classList.contains('email-section') ||
-                   el.classList.contains('share-section') ||
-                   el.classList.contains('site-footer-wrap') ||
-                   el.getAttribute('onclick') === 'retakeTest()' ||
-                   el.getAttribute('onclick') === 'copyResults()' ||
-                   el.getAttribute('onclick') === 'downloadResults()' ||
-                   el.id === 'copyBtn';
-        }
-    }).then(canvas => {
-        // Restore hidden elements
-        hideEls.forEach(el => el.style.visibility = '');
+    const removeSelectors = [
+        '.email-section',
+        '.share-section',
+        '[onclick="downloadResults()"]',
+        '[onclick="copyResults()"]',
+        '[onclick="retakeTest()"]',
+        '#copyBtn'
+    ];
+    removeSelectors.forEach(sel => {
+        clone.querySelectorAll(sel).forEach(el => el.remove());
+    });
+    clone.querySelectorAll('div[style*="display:grid"]').forEach(el => {
+        if (el.querySelector('button')) el.remove();
+    });
 
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF({
-            orientation: 'portrait',
-            unit: 'mm',
-            format: 'a4'
-        });
+    clone.style.position = 'fixed';
+    clone.style.top = '0';
+    clone.style.left = '0';
+    clone.style.width = '860px';
+    clone.style.background = '#080808';
+    clone.style.padding = '40px';
+    clone.style.zIndex = '-9999';
+    clone.style.opacity = '1';
+    clone.style.display = 'block';
+    document.body.appendChild(clone);
 
-        const pageW = 210;
-        const pageH = 297;
-        const imgW = pageW;
-        const imgH = (canvas.height * pageW) / canvas.width;
+    setTimeout(() => {
+        html2canvas(clone, {
+            backgroundColor: '#080808',
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            width: 860,
+            windowWidth: 940
+        }).then(canvas => {
+            document.body.removeChild(clone);
 
-        let heightLeft = imgH;
-        let position = 0;
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            const pageW = 210;
+            const pageH = 297;
+            const imgW = pageW;
+            const imgH = (canvas.height * pageW) / canvas.width;
 
-        pdf.addImage(imgData, 'PNG', 0, position, imgW, imgH);
-        heightLeft -= pageH;
+            let heightLeft = imgH;
+            let position = 0;
 
-        while (heightLeft > 0) {
-            position = heightLeft - imgH;
-            pdf.addPage();
             pdf.addImage(imgData, 'PNG', 0, position, imgW, imgH);
             heightLeft -= pageH;
-        }
 
-        pdf.save('wealth-creation-profile.pdf');
+            while (heightLeft > 0) {
+                position = heightLeft - imgH;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, imgW, imgH);
+                heightLeft -= pageH;
+            }
 
-        btn.textContent = 'Download My Full Profile + Plan';
-        btn.style.opacity = '1';
-        btn.disabled = false;
-    }).catch(err => {
-        hideEls.forEach(el => el.style.visibility = '');
-        btn.textContent = 'Download My Full Profile + Plan';
-        btn.style.opacity = '1';
-        btn.disabled = false;
-        console.error(err);
-    });
+            pdf.save('wealth-creation-profile.pdf');
+            btn.textContent = 'Download My Full Profile + Plan';
+            btn.style.opacity = '1';
+            btn.disabled = false;
+        }).catch(err => {
+            document.body.removeChild(clone);
+            btn.textContent = 'Download My Full Profile + Plan';
+            btn.style.opacity = '1';
+            btn.disabled = false;
+            console.error('PDF error:', err);
+        });
+    }, 300);
 }
 
 function sendResults() {
-    const email = document.getElementById('emailInput').value;
+    const emailInput = document.getElementById('emailInput');
+    const email = emailInput ? emailInput.value : '';
     if (!email || !email.includes('@')) {
         alert('Please enter a valid email address');
         return;
@@ -1886,15 +1896,13 @@ function sendResults() {
     const planEl = document.getElementById('planContainer');
     const planText = planEl ? planEl.innerText.trim() : '';
 
-    const subject = encodeURIComponent('My Wealth-Creation Profile: ' + primary[0]);
-
+    const subject = 'My Wealth-Creation Profile: ' + primary[0];
     const bodyText =
 `WHAT CAN YOU BUILD? — WEALTH CREATION DIAGNOSTIC
 AI Agency Essentials x TiaunaCreates
 
 "But remember the Lord your God, for it is he who gives you the ability to produce wealth." — Deuteronomy 8:18 (NIV)
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 YOUR PROFILE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -1907,18 +1915,40 @@ ALSO IN YOU: ${tertiary[0]} — ${getPct(tertiary[1])}%
 ALL SCORES:
 ${sorted.map(([n, s]) => n.padEnd(35, '.') + ' ' + getPct(s) + '%').join('\n')}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-YOUR 30-DAY PLAN
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
+YOUR 30-DAY PLAN:
 ${planText}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 © 2026 AI Agency Essentials & TiaunaCreates
 aiagencyessentials@gmail.com
 Take the diagnostic: ${window.location.href}`;
 
-    window.location.href = 'mailto:' + email + '?subject=' + subject + '&body=' + encodeURIComponent(bodyText);
+    const mailtoLink = 'mailto:' + email + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(bodyText);
+
+    // Try mailto first
+    const a = document.createElement('a');
+    a.href = mailtoLink;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    // Show fallback modal in case mailto didn't work
+    setTimeout(() => {
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;';
+        modal.innerHTML = `
+            <div style="background:#0d0d0d;border:1px solid #2a2a2a;border-radius:12px;padding:28px;max-width:520px;width:100%;max-height:80vh;overflow-y:auto;">
+                <p style="font-size:.7rem;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;">Email your results</p>
+                <p style="font-size:.85rem;font-weight:300;color:#888;line-height:1.6;margin-bottom:16px;">If your email app didn't open, copy the text below and paste it into an email to yourself at <strong style="color:#ccc;">${email}</strong>.</p>
+                <textarea readonly style="width:100%;height:200px;background:#111;border:1px solid #222;border-radius:8px;color:#aaa;font-size:.75rem;font-family:monospace;padding:12px;box-sizing:border-box;resize:none;line-height:1.5;">${bodyText}</textarea>
+                <div style="display:flex;gap:10px;margin-top:14px;">
+                    <button onclick="navigator.clipboard.writeText(document.querySelector('textarea').value).then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy Text',2000)})" style="flex:1;background:var(--accent);color:#080808;border:none;border-radius:8px;padding:12px;font-weight:800;font-size:.8rem;text-transform:uppercase;cursor:pointer;">Copy Text</button>
+                    <button onclick="this.closest('div[style*=fixed]').remove()" style="flex:1;background:#1a1a1a;color:#888;border:1px solid #2a2a2a;border-radius:8px;padding:12px;font-weight:800;font-size:.8rem;text-transform:uppercase;cursor:pointer;">Close</button>
+                </div>
+            </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    }, 800);
 }
 
 function copyResults() {
