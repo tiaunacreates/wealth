@@ -1803,21 +1803,32 @@ function downloadResults() {
     btn.disabled = true;
 
     const { jsPDF } = window.jspdf;
-    const resultsEl = document.getElementById('resultsSection');
 
-    // Temporarily expand all content so nothing is clipped
-    const originalOverflow = resultsEl.style.overflow;
-    resultsEl.style.overflow = 'visible';
+    // Hide elements that should not appear in the PDF
+    const hideEls = document.querySelectorAll('.email-section, .share-section, [onclick="downloadResults()"], [onclick="copyResults()"], [onclick="retakeTest()"], #copyBtn, .prompt-pack, .site-footer-wrap');
+    hideEls.forEach(el => el.style.visibility = 'hidden');
+
+    const resultsEl = document.getElementById('resultsSection');
 
     html2canvas(resultsEl, {
         backgroundColor: '#080808',
         scale: 2,
         useCORS: true,
         logging: false,
-        windowWidth: 900,
-        scrollY: 0
+        windowWidth: 860,
+        scrollY: -window.scrollY,
+        ignoreElements: (el) => {
+            return el.classList.contains('email-section') ||
+                   el.classList.contains('share-section') ||
+                   el.classList.contains('site-footer-wrap') ||
+                   el.getAttribute('onclick') === 'retakeTest()' ||
+                   el.getAttribute('onclick') === 'copyResults()' ||
+                   el.getAttribute('onclick') === 'downloadResults()' ||
+                   el.id === 'copyBtn';
+        }
     }).then(canvas => {
-        resultsEl.style.overflow = originalOverflow;
+        // Restore hidden elements
+        hideEls.forEach(el => el.style.visibility = '');
 
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF({
@@ -1834,11 +1845,9 @@ function downloadResults() {
         let heightLeft = imgH;
         let position = 0;
 
-        // First page
         pdf.addImage(imgData, 'PNG', 0, position, imgW, imgH);
         heightLeft -= pageH;
 
-        // Additional pages if content is taller than one page
         while (heightLeft > 0) {
             position = heightLeft - imgH;
             pdf.addPage();
@@ -1852,11 +1861,11 @@ function downloadResults() {
         btn.style.opacity = '1';
         btn.disabled = false;
     }).catch(err => {
-        console.error('PDF error:', err);
+        hideEls.forEach(el => el.style.visibility = '');
         btn.textContent = 'Download My Full Profile + Plan';
         btn.style.opacity = '1';
         btn.disabled = false;
-        alert('Something went wrong generating the PDF. Try again.');
+        console.error(err);
     });
 }
 
