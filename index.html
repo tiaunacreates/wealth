@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>What Can You Build? — Wealth Creation Diagnostic</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;800&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -899,6 +900,10 @@
 
             <!-- Action buttons -->
             <div style="display:grid;gap:12px;margin-bottom:32px;">
+                <div class="email-section" style="margin-bottom:12px;">
+    <input type="email" id="emailInput" placeholder="Enter your email to receive results">
+    <button class="btn-email" onclick="sendResults()">Email Results</button>
+</div>
                 <button class="btn-next" onclick="downloadResults()" style="background:var(--accent);color:var(--bg);">Download My Full Profile + Plan</button>
                 <button class="btn-copy" onclick="copyResults()" id="copyBtn">Copy My Results</button>
                 <button class="btn-next" onclick="retakeTest()" style="background:#111;color:#888;border:1px solid #222;">← Retake Assessment</button>
@@ -1730,8 +1735,8 @@ function renderResults() {
                     <div class="profile-title" style="margin-bottom:0;font-size:1.6rem;">${name}</div>
                 </div>
                 <div style="text-align:right;">
-                    <div style="font-size:2.8rem;font-weight:800;color:var(--accent);line-height:1;">${labelPct}%</div>
-                    <div style="font-size:.65rem;color:var(--grey);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;">match</div>
+<div style="font-size:clamp(1.4rem,5vw,2.8rem);font-weight:800;color:var(--accent);line-height:1;">${labelPct}%</div>                   
+<div style="font-size:.65rem;color:var(--grey);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;">match</div>
                 </div>
             </div>
             <div style="margin:14px 0 18px;position:relative;">
@@ -1792,229 +1797,67 @@ function renderResults() {
 }
 
 function downloadResults() {
+    const btn = document.querySelector('[onclick="downloadResults()"]');
+    btn.textContent = 'Generating PDF...';
+    btn.style.opacity = '0.7';
+    btn.disabled = true;
+
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const resultsEl = document.getElementById('resultsSection');
 
-    const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-    const totalScore = Object.values(scores).reduce((a, b) => a + b, 0);
-    const getPct = (s) => totalScore > 0 ? Math.round((s / totalScore) * 100) : 0;
-    const primary = sorted[0];
-    const secondary = sorted[1];
-    const tertiary = sorted[2];
-    const pp = profileData[primary[0]];
-    const sp = profileData[secondary[0]];
-    const tp = profileData[tertiary[0]];
-    const planEl = document.getElementById('planContainer');
-    const planText = planEl ? planEl.innerText.trim() : '';
+    // Temporarily expand all content so nothing is clipped
+    const originalOverflow = resultsEl.style.overflow;
+    resultsEl.style.overflow = 'visible';
 
-    const accent = [255, 174, 201];
-    const white = [255, 255, 255];
-    const dark = [8, 8, 8];
-    const grey = [100, 100, 100];
-    const lightgrey = [30, 30, 30];
+    html2canvas(resultsEl, {
+        backgroundColor: '#080808',
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        windowWidth: 900,
+        scrollY: 0
+    }).then(canvas => {
+        resultsEl.style.overflow = originalOverflow;
 
-    const pageW = 210;
-    const pageH = 297;
-    const margin = 20;
-    const contentW = pageW - margin * 2;
-    let y = 0;
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+        });
 
-    const addPage = () => {
-        doc.addPage();
-        y = 20;
-        // dark background on every page
-        doc.setFillColor(...dark);
-        doc.rect(0, 0, pageW, pageH, 'F');
-    };
+        const pageW = 210;
+        const pageH = 297;
+        const imgW = pageW;
+        const imgH = (canvas.height * pageW) / canvas.width;
 
-    const checkY = (needed = 20) => {
-        if (y + needed > pageH - 20) addPage();
-    };
+        let heightLeft = imgH;
+        let position = 0;
 
-    const heading = (text, size = 10) => {
-        checkY(12);
-        doc.setFontSize(size);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...accent);
-        doc.text(text.toUpperCase(), margin, y);
-        y += size * 0.5;
-    };
+        // First page
+        pdf.addImage(imgData, 'PNG', 0, position, imgW, imgH);
+        heightLeft -= pageH;
 
-    const body = (text, size = 9, color = white) => {
-        doc.setFontSize(size);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(...color);
-        const lines = doc.splitTextToSize(text, contentW);
-        checkY(lines.length * size * 0.45 + 4);
-        doc.text(lines, margin, y);
-        y += lines.length * size * 0.45 + 4;
-    };
-
-    const divider = () => {
-        checkY(6);
-        doc.setDrawColor(40, 40, 40);
-        doc.line(margin, y, pageW - margin, y);
-        y += 6;
-    };
-
-    const bar = (label, pct, isPrimary = false) => {
-        checkY(12);
-        doc.setFontSize(15);
-        doc.setFont('helvetica', isPrimary ? 'bold' : 'normal');
-        doc.setTextColor(...(isPrimary ? accent : grey));
-        doc.text(label, margin, y);
-        doc.text(pct + '%', pageW - margin, y, { align: 'right' });
-        y += 4;
-        doc.setFillColor(20, 20, 20);
-        doc.roundedRect(margin, y, contentW, 3, 1, 1, 'F');
-        const barW = Math.max((pct / 100) * contentW, 2);
-        doc.setFillColor(...(isPrimary ? accent : [50, 50, 50]));
-        doc.roundedRect(margin, y, barW, 3, 1, 1, 'F');
-        y += 8;
-    };
-
-    // ── Cover ──
-    doc.setFillColor(...dark);
-    doc.rect(0, 0, pageW, pageH, 'F');
-    doc.setFillColor(...accent);
-    doc.rect(0, 0, pageW, 2, 'F');
-
-    y = 48;
-    doc.setFontSize(30);
-    doc.setFont('INTER', 'bold' , 'all caps');
-    doc.setTextColor(...accent);
-    doc.text('WEALTH CREATION DIAGNOSTIC', margin, y);
-    y += 12;
-
-    doc.setFontSize(28);
-    doc.setFont('INTER', 'bold', 'all caps');
-    doc.setTextColor(...white);
-    doc.text('What Can', margin, y);
-    y += 12;
-    doc.setTextColor(...accent);
-    doc.text('You Build?', margin, y);
-    y += 20;
-
-    doc.setFontSize(15);
-    doc.setFont('inter', 'normal');
-    doc.setTextColor(...grey);
-    const verse = '"But remember the Lord your God, for it is he who gives you the ability to produce wealth." — Deuteronomy 8:18 (NIV)';
-    const verseLines = doc.splitTextToSize(verse, contentW - 20);
-    doc.setFillColor(15, 15, 15);
-    doc.roundedRect(margin, y - 4, contentW, verseLines.length * 5 + 10, 2, 2, 'F');
-    doc.setDrawColor(...accent);
-    doc.setLineWidth(0.5);
-    doc.line(margin, y - 4, margin, y - 4 + verseLines.length * 5 + 10);
-    doc.text(verseLines, margin + 4, y + 2);
-    y += verseLines.length * 5 + 20;
-
-    doc.setFontSize(15);
-    doc.setFont('inter', 'bold');
-    doc.setTextColor(...white);
-    doc.text(primary[0].toUpperCase(), margin, y);
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...accent);
-    doc.text(getPct(primary[1]) + '% match', margin, y + 6);
-    y += 20;
-
-    doc.setFontSize(15);
-    doc.setTextColor(...grey);
-    doc.text('AI Agency Essentials × TiaunaCreates', margin, pageH - 16);
-    doc.text('aiagencyessentials@gmail.com', pageW - margin, pageH - 16, { align: 'right' });
-    doc.setFontSize(7);
-    doc.text('© 2026 AI Agency Essentials & TiaunaCreates', margin, pageH - 10);
-
-    // ── Page 2: Profiles ──
-    addPage();
-    heading('Your Profile Results', 25);
-    y += 6;
-
-    [[primary, pp, 'Primary Profile'], [secondary, sp, 'Secondary Strength'], [tertiary, tp, 'Also In You']].forEach(([profile, data, rank]) => {
-        checkY(40);
-        doc.setFontSize(15);
-        doc.setFont('inter', 'bold');
-        doc.setTextColor(...accent);
-        doc.text(rank.toUpperCase(), margin, y);
-        y += 5;
-        doc.setFontSize(15);
-        doc.setFont('inter', 'bold');
-        doc.setTextColor(...white);
-        doc.text(profile[0], margin, y);
-        doc.setFontSize(15);
-        doc.setFont('inter', 'normal');
-        doc.setTextColor(...accent);
-        doc.text(getPct(profile[1]) + '%', pageW - margin, y, { align: 'right' });
-        y += 7;
-        body(data.desc, 8.5, grey);
-        y += 4;
-        divider();
-        y += 2;
-    });
-
-    // ── Page 3: Score Breakdown ──
-    addPage();
-    heading('Full Score Breakdown', 20);
-    y += 8;
-    sorted.forEach(([name, score], i) => {
-        const scaleBar = (s) => {
-            const max = sorted[0][1];
-            return max > 0 ? Math.round((s / max) * 94) : 0;
-        };
-        const barW = Math.max(scaleBar(score), i === 0 ? 88 : score > 0 ? 12 : 4);
-        bar(name, getPct(score), i === 0);
-    });
-
-    y += 8;
-    heading('What You Could Build', 25);
-    y += 4;
-    pp.opportunities.forEach(opp => {
-        checkY(8);
-        doc.setFontSize(18);
-        doc.setFont('inter', 'normal');
-        doc.setTextColor(...accent);
-        doc.text('→', margin, y);
-        doc.setTextColor(...white);
-        const lines = doc.splitTextToSize(opp, contentW - 8);
-        doc.text(lines, margin + 6, y);
-        y += lines.length * 5 + 2;
-    });
-
-    // ── Page 4+: 30-Day Plan ──
-    addPage();
-    heading('Your 30-Day Plan', 15);
-    y += 6;
-
-    const planLines = planText.split('\n').filter(l => l.trim());
-    planLines.forEach(line => {
-        const trimmed = line.trim();
-        if (!trimmed) return;
-        if (trimmed === trimmed.toUpperCase() && trimmed.length < 60) {
-            checkY(14);
-            y += 4;
-            doc.setFontSize(15);
-            doc.setFont('inter', 'bold');
-            doc.setTextColor(...accent);
-            doc.text(trimmed, margin, y);
-            y += 6;
-        } else {
-            body(trimmed, 8.5, grey);
+        // Additional pages if content is taller than one page
+        while (heightLeft > 0) {
+            position = heightLeft - imgH;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, imgW, imgH);
+            heightLeft -= pageH;
         }
+
+        pdf.save('wealth-creation-profile.pdf');
+
+        btn.textContent = 'Download My Full Profile + Plan';
+        btn.style.opacity = '1';
+        btn.disabled = false;
+    }).catch(err => {
+        console.error('PDF error:', err);
+        btn.textContent = 'Download My Full Profile + Plan';
+        btn.style.opacity = '1';
+        btn.disabled = false;
+        alert('Something went wrong generating the PDF. Try again.');
     });
-
-    // ── Footer on last page ──
-    checkY(20);
-    y += 10;
-    divider();
-    doc.setFontSize(15);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...grey);
-    doc.text('AI Agency Essentials × TiaunaCreates', margin, y);
-    doc.text('aiagencyessentials@gmail.com', pageW - margin, y, { align: 'right' });
-    y += 5;
-    doc.text('© 2026 AI Agency Essentials & TiaunaCreates. All rights reserved.', margin, y);
-
-    doc.save('wealth-creation-profile.pdf');
 }
 
 function sendResults() {
@@ -2051,7 +1894,6 @@ ${planText}
 aiagencyessentials@gmail.com
 Take the diagnostic: ${window.location.href}`);
     window.location.href = 'mailto:' + email + '?subject=' + subject + '&body=' + body;
-
 }
 
 function copyResults() {
