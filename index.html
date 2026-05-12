@@ -1862,7 +1862,11 @@ function downloadResults() {
 
 function sendResults() {
     const email = document.getElementById('emailInput').value;
-    if (!email.includes('@')) { alert('Please enter a valid email address'); return; }
+    if (!email || !email.includes('@')) {
+        alert('Please enter a valid email address');
+        return;
+    }
+
     const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
     const totalScore = Object.values(scores).reduce((a, b) => a + b, 0);
     const getPct = (s) => totalScore > 0 ? Math.round((s / totalScore) * 100) : 0;
@@ -1872,11 +1876,18 @@ function sendResults() {
     const pp = profileData[primary[0]];
     const planEl = document.getElementById('planContainer');
     const planText = planEl ? planEl.innerText.trim() : '';
+
     const subject = encodeURIComponent('My Wealth-Creation Profile: ' + primary[0]);
-    const body = encodeURIComponent(
+
+    const bodyText =
 `WHAT CAN YOU BUILD? — WEALTH CREATION DIAGNOSTIC
+AI Agency Essentials x TiaunaCreates
 
 "But remember the Lord your God, for it is he who gives you the ability to produce wealth." — Deuteronomy 8:18 (NIV)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+YOUR PROFILE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 PRIMARY: ${primary[0]} — ${getPct(primary[1])}%
 ${pp.desc}
@@ -1885,15 +1896,20 @@ SECONDARY: ${secondary[0]} — ${getPct(secondary[1])}%
 ALSO IN YOU: ${tertiary[0]} — ${getPct(tertiary[1])}%
 
 ALL SCORES:
-${sorted.map(([n, s]) => (n + ' ').padEnd(38, '.') + ' ' + getPct(s) + '%').join('\n')}
+${sorted.map(([n, s]) => n.padEnd(35, '.') + ' ' + getPct(s) + '%').join('\n')}
 
-YOUR 30-DAY PLAN:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+YOUR 30-DAY PLAN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 ${planText}
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 © 2026 AI Agency Essentials & TiaunaCreates
 aiagencyessentials@gmail.com
-Take the diagnostic: ${window.location.href}`);
-    window.location.href = 'mailto:' + email + '?subject=' + subject + '&body=' + body;
+Take the diagnostic: ${window.location.href}`;
+
+    window.location.href = 'mailto:' + email + '?subject=' + subject + '&body=' + encodeURIComponent(bodyText);
 }
 
 function copyResults() {
